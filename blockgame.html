@@ -1,0 +1,172 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border: 1px solid #d3d3d3;
+    background-color: #D3FFD3;
+}
+</style>
+</head>
+<body onload = "startGame()">
+<script>
+
+var myGamePiece;
+var myFruit;
+var prevDirection;
+var direction;
+
+function startGame() {
+	myGameArea.start();
+	makeComponents();
+	myFruit = new fruit(450, 300);
+	myFruit.update();
+	prevDirection = 0;
+	direction = 0;
+}
+
+function makeComponents() {
+	myGamePiece = new component(30, 30, "#00CC00", 360, 300);
+	myGamePiece.next = new component(30, 30, "lightGreen", 330, 300);
+	myGamePiece.next.next = new component(30, 30, "lightGreen", 300, 300);
+	myGamePiece.update();
+	myGamePiece.next.update();
+	myGamePiece.next.next.update();
+}
+
+function fruit(xpos, ypos){
+	this.width = 30;
+	this.height = 30;
+	this.x = xpos;
+	this.y = ypos;
+	this.update = function() {
+		ctx = myGameArea.context;
+		ctx.fillStyle = "#FF6363";
+		ctx.fillRect(this.x + 3, this.y + 3, this.width - 3, this.height - 3);
+	}
+}
+
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 900;
+        this.canvas.height = 600;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.interval = setInterval(updateGameArea, 100);
+    },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    pause : function() {
+	clearInterval(this.interval);
+    }
+}
+
+function component(width, height, color, x, y) {
+  this.width = width;
+  this.height = height;
+  this.x = x;
+  this.y = y;
+  this.next = null;
+  this.update = function() {
+    ctx = myGameArea.context;
+    ctx.fillStyle = color;
+    ctx.fillRect(this.x + 3, this.y + 3, this.width - 3, this.height - 3);
+    if (this.x < 0 || this.x >= 900 || this.y < 0 || this.y >= 600){
+	alert("Game over! Press space to reset...");
+	direction = -1;
+	myGameArea.pause();
+    }
+  }
+  this.newPos = function() {
+    if (this.next != null){
+	this.next.newPos();
+	this.next.x = this.x;
+	this.next.y = this.y;
+	this.next.update();
+    }
+  }
+  this.addComponent = function() {
+	if (this.next != null){
+		this.next.addComponent();
+	} else {
+		this.next = new component(30, 30, "lightGreen", this.x, this.y);
+	}
+  }
+  this.reset = function() {
+	if (this.next != null){
+		this.next.reset();
+		this.next = null;
+	}
+  }
+  this.dead = function(xpos, ypos) {
+	if(this.next == null){
+		return false;
+	}
+	if(this.x == xpos && this.y == ypos){
+		return true;
+	}else{
+		return this.next.dead(xpos, ypos);
+  	}
+  }
+}
+
+function updateGameArea() {
+  if (direction != 0 && direction != -1){
+  if (myGamePiece.next.dead(myGamePiece.x, myGamePiece.y)){
+	alert("Game over! Press space to reset...");
+	direction = -1;
+	myGameArea.pause();
+  }
+  myGameArea.clear();
+  myGamePiece.newPos();
+    if (direction == 1){
+    	myGamePiece.y -= myGamePiece.height;
+    }
+    if (direction == 2){
+    	myGamePiece.y += myGamePiece.height;
+    }
+    if (direction == 3){
+    	myGamePiece.x -= myGamePiece.width;
+    }
+    if (direction == 4){
+    	myGamePiece.x += myGamePiece.width;
+    }
+  myGamePiece.update();
+  if (myGamePiece.x == myFruit.x && myGamePiece.y == myFruit.y){
+	myGamePiece.addComponent();
+	do{
+		myFruit.x = Math.floor(Math.random() * 30) * 30;
+		myFruit.y = Math.floor(Math.random() * 20) * 30;
+	}while (myGamePiece.dead(myFruit.x, myFruit.y));
+  }
+  myFruit.update();
+  prevDirection = direction;
+  }
+}
+
+window.onkeydown = function (e) {
+    var code = e.keyCode ? e.keyCode : e.which;
+    if (direction != -1){
+	    if ((code == 38 || code == 87) && prevDirection != 2) { //up key
+		direction = 1;
+	    } else if ((code == 40 || code == 83) && prevDirection != 1) { //down key
+		prevDirection == direction;
+		direction = 2;
+	    } else if ((code == 37 || code == 65) && prevDirection != 4 && direction != 0) { //left key
+		prevDirection == direction;
+	        direction = 3;
+	    } else if ((code == 39 || code == 68) && prevDirection != 3) { //right key
+	        direction = 4;
+	    }
+    } 
+    else if (code == 32){
+	startGame();
+    }
+
+}
+
+</script>
+</body>
+</html>
